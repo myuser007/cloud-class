@@ -1,0 +1,223 @@
+STEPS 
+====
+1. **Assign Ethernet interfaces to VLANs**
+   Purpose: Connect physical ports to Inside, Outside, and DMZ networks.
+---
+2. **Configure VLAN1 as Inside interface**
+   Purpose: Create trusted internal network gateway.
+---
+3. **Set Inside security level to 100**
+   Purpose: Allow trusted users to initiate outbound connections.
+---
+4. **Assign IP address to Inside interface**
+   Purpose: Provide default gateway for internal LAN devices.
+---
+5. **Configure VLAN2 as Outside interface**
+   Purpose: Connect ASA to the Internet/public network.
+---
+6. **Set Outside security level to 0**
+   Purpose: Mark external network as untrusted.
+---
+7. **Assign public IP to Outside interface**
+   Purpose: Enable Internet connectivity.
+---
+8. **Configure VLAN3 as DMZ interface**
+   Purpose: Create separate network for public-facing servers.
+---
+9. **Block direct forwarding between DMZ and Inside**
+   Purpose: Protect internal LAN from DMZ access.
+---
+10. **Set DMZ security level to 50**
+    Purpose: Create medium-trust security zone.
+---
+11. **Assign IP address to DMZ interface**
+    Purpose: Provide gateway for DMZ servers.
+---
+
+12. **Create Inside network object**
+    Purpose: Define internal subnet for NAT configuration.
+---
+13. **Configure dynamic NAT (PAT)**
+    Purpose: Allow inside users to access the Internet using one public IP.
+---
+14. **Create DMZ server object**
+    Purpose: Define the public server in DMZ.
+---
+15. **Configure static NAT for DMZ server**
+    Purpose: Publish DMZ server to external users using public IP.
+---
+16. **Configure default route**
+    Purpose: Send unknown traffic toward ISP router.
+---
+17. **Create access-list for DMZ server**
+    Purpose: Permit external users to access DMZ server.
+---
+18. **Apply ACL on outside interface**
+    Purpose: Filter incoming Internet traffic.
+---
+19. **Create inspection class-map**
+    Purpose: Identify traffic types for stateful inspection.
+---
+20. **Configure global policy-map**
+    Purpose: Enable protocol inspection services.
+---
+21. **Enable HTTP inspection**
+    Purpose: Monitor and manage HTTP connections.
+---
+22. **Enable ICMP inspection**
+    Purpose: Allow ping replies through firewall.
+---
+23. **Apply service-policy globally**
+    Purpose: Activate inspection policies on all interfaces.
+	
+COMMANDS
+=========	
+
+ Physical Interface Assignments
+================================
+
+interface Ethernet0/0
+ switchport access vlan 3
+no shut 
+ 
+interface Ethernet0/1
+ switchport access vlan 1    
+no shut
+
+interface Ethernet0/2
+ switchport access vlan 2     
+no shut
+
+VLAN 1 - Inside Network
+================================
+
+interface Vlan1
+ nameif inside                
+ security-level 100         
+ ip address 192.168.1.1 255.255.255.0 
+no shut
+
+VLAN 2 - Outside Network
+==========================
+interface Vlan2
+ nameif outside               
+ security-level 0             
+ ip address 209.165.200.2 255.255.255.248 
+no shut
+VLAN 3 - DMZ Network
+================================
+
+interface Vlan3
+ no forward interface Vlan1   
+ nameif DMZ                  
+ security-level 50          
+ ip address 192.168.2.1 255.255.255.0  
+no shut
+
+Inside LAN Network Object
+================================
+object network inside-LAN
+ subnet 192.168.1.0 255.255.255.0   
+ nat (inside,outside) dynamic interface
+
+ DMZ Server Object
+ ================================
+object network server-DMZ
+ host 192.168.2.254          
+ nat (DMZ,outside) static 209.165.200.3
+
+Default Route
+================================
+route outside 0.0.0.0 0.0.0.0 209.165.200.1 1
+
+Access Control List (ACL)
+================================
+
+access-list server_DMZ_ACL extended permit ip any object server-DMZ
+access-group server_DMZ_ACL in interface outside
+
+Traffic Inspection Class 
+================================
+
+class-map inspection_default
+ match default-inspection-traffic
+
+Global Inspection Policy
+================================
+policy-map global_policy
+ class inspection_default
+  inspect http
+  inspect icmp
+
+Activate Global Policy
+================================
+service-policy global_policy global
+
+	
+	END
+	===
+	
+	
+	
+
+
+
+
+
+
+
+
+
+
+1. **Assign physical interfaces to VLANs**
+   Purpose: Connect Inside, Outside, and DMZ networks to the ASA.
+===
+2. **Configure Inside VLAN interface**
+   Purpose: Create trusted internal network gateway with highest security level.
+====
+3. **Configure Outside VLAN interface**
+   Purpose: Connect ASA to external/untrusted network.
+====
+4. **Configure DMZ VLAN interface**
+   Purpose: Create semi-secure network for public servers.
+===
+5. **Block DMZ direct access to Inside network**
+   Purpose: Protect internal LAN from DMZ hosts.
+=====
+6. **Configure static routes**
+   Purpose: Allow ASA to reach internal and external LANs through multilayer switches.
+=====
+7. **Create Inside network object**
+   Purpose: Define internal subnet for NAT and policies.
+====
+8. **Configure dynamic NAT (PAT)**
+   Purpose: Allow internal users to access external networks using ASA outside IP.
+===
+9. **Create DMZ server object**
+   Purpose: Define DMZ web server for public access.
+===
+10. **Configure static NAT for DMZ server**
+    Purpose: Publish DMZ server to external users.
+==
+11. **Create outside access-list (ACL)**
+
+12. **Apply ACL to outside interface**
+    Purpose: Filter incoming external traffic.
+==
+13. **Configure inspection class-map**
+    Purpose: Identify traffic for stateful inspection.
+===
+14. **Configure global policy-map**
+    Purpose: Inspect protocols like HTTP and ICMP.
+===
+15. **Apply service-policy globally**
+    Purpose: Activate inspection policies on all interfaces.
+===
+16. **Enable routing on multilayer switches**
+    Purpose: Allow Layer-3 communication between VLANs.
+===
+17. **Configure switch VLAN interfaces (SVIs)**
+    Purpose: Provide gateway addresses for internal and external LANs.
+===
+18. **Configure default routes on multilayer switches**
+    Purpose: Send unknown traffic toward the ASA firewall.
